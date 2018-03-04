@@ -6,7 +6,9 @@
 #include "ARUtils.h"
 #include "ARShaders.h"
 #include "ARDebugUtils.h"
-
+#include "ofxiOS.h"
+#include "ARUtils.h"
+#include "ARObjects.h"
 
 namespace ARCore {
 
@@ -31,6 +33,9 @@ namespace ARCore {
         //! The calculated viewport dimensions for a device. Primarily for iPads
         vec2 mViewportDimensions;
         
+        //! Normal resolution of the device as defined by ofGetWindowWidth / ofGetWindowHeight()
+        CGSize mResolution;
+        
         //! A flag for triggering debug related items.
         bool mDebugMode;
 
@@ -45,6 +50,10 @@ namespace ARCore {
 
         //! Rotation matrix for tweaking the camera to the correct orientaiton.
         mat4 cameraRotation;
+        
+        //! Fbo for rendering scaled versions of the camera image and/or for doing
+        //! things with the camera feed.
+        ofFbo cameraFbo;
 
         // ============= VIDEO / CAMERA / TRACKING RELATED ================ //
         CVOpenGLESTextureRef yTexture;
@@ -75,6 +84,8 @@ namespace ARCore {
         
         //! the dimensions of the calculated camera image. 
         ofVec2f cameraDimensions;
+        
+        ARObjects::ARCameraMatrices cameraMatrices;
 
         // ============= MESH / RENDERING =============== //
         
@@ -82,9 +93,6 @@ namespace ARCore {
         ofShader cameraConvertShader;
         
         //! mesh to render camera image
-        ofVbo vMesh;
-
-            //! mesh to render camera image
         ofVbo vMesh;
         
         //! vertex data to render the camera image
@@ -110,16 +118,31 @@ namespace ARCore {
         //! Figure out necessary calculations to correctly scale image
         //! primarily to iPad sized viewports.
         void buildScalingRects();
+        
+        //! Updates the texture coordinates of the drawing mesh depending on
+        //! the current state of the device. 
+        void updatePlaneTexCoords();
+        
+        //! Updates the internal FBO if enabled with the new camera image.
+        void updateFBO();
         public:
             ARCameraView(ARSession * session,bool mUseFbo=false);
 
+        static ARCameraViewRef create(ARSession * session, bool mUseFbo=false){
+            return ARCameraViewRef(new ARCameraView(session,mUseFbo));
+        }
             void update();
-            void draw();
+            void draw(int x=0,int y=0,float width=0.0f,float height=0.0f);
             void drawScaled(int x=0,int y=0,float width=0.0f,float height=0.0f);
+        
+            //! When using an FBO, sets the x and y offset of where the image is drawn.
             void setCameraImagePosition(int xShift,int yShift);
 
             //! Update the device's interface orientation settings based on the current
             //! based on the current device's actual rotation. 
             void updateInterfaceOrientation();
-    }
+        
+            //! updates the current projection and view matricies currently seen by ARKit.
+            ARObjects::ARCameraMatrices getMatricesForOrientation(UIInterfaceOrientation orientation,float near, float far);
+    };
 }

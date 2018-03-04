@@ -6,7 +6,7 @@
 //
 
 #include "ARProcessor.h"
-using namespace ARCommon;
+using namespace ARUtils;
 using namespace ARCore;
 
 ARProcessor::ARProcessor(ARSession * session){
@@ -79,15 +79,15 @@ void ARProcessor::setARCameraMatrices(){
     camera->setARCameraMatrices();
 }
 
-ofVec3f ARProcessor::getCameraPosition(){
-    return ARCommon::getAnchorXYZ(camera->getTransformMatrix());
+vec3 ARProcessor::getCameraPosition(){
+    return ARUtils::getAnchorXYZ(camera->getTransformMatrix());
 }
 
 ofTexture ARProcessor::getCameraTexture(){
    return camera->getCameraTexture();
 }
 
-ARCommon::ARCameraMatrices ARProcessor::getCameraMatrices(){
+ARObjects::ARCameraMatrices ARProcessor::getCameraMatrices(){
      return camera->getCameraMatrices();
 }
 
@@ -121,10 +121,10 @@ void ARProcessor::addAnchor(float zZoom){
     anchorController->addAnchor(zZoom);
 }
 
-void ARProcessor::addAnchor(ofVec3f position){
+void ARProcessor::addAnchor(vec3 position){
     auto matrices = getCameraMatrices();
  
-    ofMatrix4x4 model = toMat4(session.currentFrame.camera.transform);
+    mat4 model = toMat4(session.currentFrame.camera.transform);
     anchorController->addAnchor(position,matrices.cameraProjection,model * getCameraMatrices().cameraView);
 }
 

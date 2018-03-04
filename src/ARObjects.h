@@ -75,6 +75,13 @@ namespace ARObjects {
         
     }FaceAnchorObject;
     
+    //! joined camera matrices as one object.
+    typedef struct {
+        mat4 cameraTransform;
+        mat4 cameraProjection;
+        mat4 cameraView;
+    }ARCameraMatrices;
+    
     //! quickly constructs an standard ARObject 
     static inline ARObject buildARObject(ARAnchor * rawAnchor,ofMatrix4x4 modelMatrix,bool systemAdded=false){
         ARObject obj;

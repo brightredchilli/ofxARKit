@@ -2,7 +2,6 @@
 //  SessionSetup.h
 //
 //  Created by Joseph Chow on 11/16/17.
-//  Copyright © 2017 Joseph Chow. All rights reserved.
 //
 
 #ifndef SessionSetup_h

@@ -5,19 +5,23 @@
 namespace ARCore {
 
     ARCameraView::ARCameraView(ARSession * session, bool mUseFbo):
-    mUseFbo(mUseFbo){
+    mUseFbo(mUseFbo),
+    near(1.0),
+    far(1000.0){
 
-        //! Store session.
+        // Store session.
         this->session = session;    
 
-        //! Get the resolution we're capturing at. 
+        // Get the resolution we're capturing at.
         auto dimensions = session.currentFrame.camera.imageResolution;
         
         
         // set camera frame dimensions.
-        mCameraFrameDimensions.x = diemensions.width;
+        mCameraFrameDimensions.x = dimensions.width;
         mCameraFrameDimensions.y = dimensions.height;
-
+        
+        auto resolution = ARUtils::getDeviceDimensions(true);
+        mResolution = CGSizeMake(resolution.x,resolution.y);
 
         // setup other variables with defaults.
         ambientIntensity = 0.0;
@@ -26,7 +30,7 @@ namespace ARCore {
         CbCrTexture = NULL;
         near = 0.1;
         far = 1000.0;
-        debugMode = false;
+        mDebugMode = false;
         xShift = 0;
         yShift = 0;
 
@@ -58,9 +62,68 @@ namespace ARCore {
             return;
         }
         
+        // update tracking state
+        trackingState = session.currentFrame.camera.trackingState;
+        
+        
+        // update camera transform
+        cameraMatrices.cameraTransform = ARUtils::toMat4(session.currentFrame.camera.transform);
+        
+        // update camera projection and view matrices.
+        getMatricesForOrientation(orientation,near,far);
+        
+        if(session.currentFrame){
+            // update texture coordinates
+            updatePlaneTexCoords();
+            
+            // do light estimates
+            if (session.currentFrame.lightEstimate) {
+                
+                // note - in lumens, divide by 1000 to get a more normal value
+                ambientIntensity = session.currentFrame.lightEstimate.ambientIntensity / 1000;
+                
+                // note - in kelvin,
+                //A value of 6500 represents neutral (pure white) lighting; lower values indicate a "warmer" yellow or orange tint, and higher values indicate a "cooler" blue tint.
+                ambientColorTemperature = session.currentFrame.lightEstimate.ambientColorTemperature;
+            }
+            
+            // grab current frame pixels from camera
+            CVPixelBufferRef pixelBuffer = session.currentFrame.capturedImage;
+            
+            if (CVPixelBufferGetPlaneCount(pixelBuffer) >= 2) {
+                
+                // build the new camera frame.
+                buildCameraFrame(pixelBuffer);
+                
+                // update fbo if necessary.
+                updateFBO();
+            }
+            
+        }
+        
+        // Flush texture cache
+        CVOpenGLESTextureCacheFlush(_videoTextureCache, 0);
+        
     }
 
-    void ARCameraView::draw(){
+    void ARCameraView::draw(int x,int y,float width,float height){
+        if(x != 0 || y != 0){
+            if (mUseFbo){
+                drawScaled(x,y,width,height);
+            }
+        }else{
+        
+            
+            cameraConvertShader.begin();
+            vMesh.draw(GL_TRIANGLE_STRIP, 0, 16);
+            cameraConvertShader.end();
+        }
+        
+        
+        
+    }
+    
+    void ARCameraView::drawScaled(int x,int y,float width,float height){
         
     }
 
@@ -102,13 +165,67 @@ namespace ARCore {
     }
 
     //! Sets the x and y position of where the camera image is placed.
-    void ARCameraView::setCameraImagePosition(float xShift,float yShift){
+    void ARCameraView::setCameraImagePosition(int xShift, int yShift){
         this->xShift = xShift;
         this->yShift = yShift;
     }
     
+    ARObjects::ARCameraMatrices ARCameraView::getMatricesForOrientation(UIInterfaceOrientation orientation,float near, float far){
+        cameraMatrices.cameraView = ARUtils::toMat4([session.currentFrame.camera viewMatrixForOrientation:orientation]);
+        
+        cameraMatrices.cameraProjection = ARUtils::toMat4([session.currentFrame.camera projectionMatrixForOrientation:orientation viewportSize:mResolution zNear:(CGFloat)near zFar:(CGFloat)far]);
+        
+        return cameraMatrices;
+    }
+    
 
     // ============== PRIVATE ================= //
+    
+    void ARCameraView::updateFBO(){
+        if(mUseFbo){
+            // write image to fbo
+            cameraFbo.begin();
+            cameraConvertShader.begin();
+            
+            switch(UIDevice.currentDevice.orientation){
+                case UIDeviceOrientationFaceUp:
+                    cameraConvertShader.setUniform1i("isPortraitOrientation", true);
+                    break;
+                case UIDeviceOrientationFaceDown:
+                    break;
+                    
+                case UIDeviceOrientationUnknown:
+                    
+                    cameraConvertShader.setUniform1i("isPortraitOrientation", true);
+                    break;
+                case UIDeviceOrientationPortraitUpsideDown:
+                    
+                    cameraConvertShader.setUniform1i("isPortraitOrientation", true);
+                    break;
+                    
+                case UIDeviceOrientationPortrait:
+                    
+                    cameraConvertShader.setUniform1i("isPortraitOrientation", true);
+                    
+                    break;
+                    
+                case UIDeviceOrientationLandscapeLeft:
+                    
+                    cameraConvertShader.setUniform1i("isPortraitOrientation", false);
+                    break;
+                    
+                case UIDeviceOrientationLandscapeRight:
+                    
+                    cameraConvertShader.setUniform1i("isPortraitOrientation", false);
+                    break;
+            }
+            
+            vMesh.draw(GL_TRIANGLE_STRIP, 0, 16);
+            cameraConvertShader.end();
+            cameraFbo.end();
+        }
+    }
+    
     void ARCameraView::buildFBO(int width,int height){
             
         // allocate FBO - note defaults are 4000x4000 which may impact overall memory perf
@@ -130,7 +247,7 @@ namespace ARCore {
         // ========= ROTATE IMAGES ================= //
         
         cameraConvertShader.begin();
-        cameraConvertShader.setUniformMatrix4f("rotationMatrix", rotation);
+        //cameraConvertShader.setUniformMatrix4f("rotationMatrix", rotation);
         
         cameraConvertShader.end();
         
@@ -159,14 +276,14 @@ namespace ARCore {
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
         
-        glBindTexture(CVOpenGLESTextureGetTarget(CbCrTexture), 0);
+        glBindTexture(CVOpenGLESTextureGetTarget(CbCrTexture), 1);
         
         
         // write uniforms values to shader
         cameraConvertShader.begin();
         
         
-        cameraConvertShader.setUniform2f("resolution", viewportSize.width,viewportSize.height);
+         cameraConvertShader.setUniform2f("resolution",mResolution.width,mResolution.height);
         cameraConvertShader.setUniformTexture("yMap", CVOpenGLESTextureGetTarget(yTexture), CVOpenGLESTextureGetName(yTexture), 0);
         
         cameraConvertShader.setUniformTexture("uvMap", CVOpenGLESTextureGetTarget(CbCrTexture), CVOpenGLESTextureGetName(CbCrTexture), 1);
@@ -232,7 +349,24 @@ namespace ARCore {
 
         cam.scaleFromCenter(scaleVal);
         
-        mViewportDimensionss.x = cam.getWidth();
-        mViewportDimensionss.y = cam.getHeight();
+        mViewportDimensions.x = cam.getWidth();
+        mViewportDimensions.y = cam.getHeight();
+    }
+    
+    void ARCameraView::updatePlaneTexCoords(){
+        // see
+        // https://developer.apple.com/documentation/arkit/arframe/2923543-displaytransformfororientation?language=objc
+        // this is more or less from the default project example.
+      
+        CGAffineTransform displayToCameraTransform = CGAffineTransformInvert([session.currentFrame displayTransformForOrientation:orientation viewportSize:mResolution]);
+        
+        for (NSInteger index = 0; index < 4; index++) {
+            NSInteger textureCoordIndex = 4 * index + 2;
+            CGPoint textureCoord = CGPointMake(kImagePlaneVertexData[textureCoordIndex], kImagePlaneVertexData[textureCoordIndex + 1]);
+            CGPoint transformedCoord = CGPointApplyAffineTransform(textureCoord, displayToCameraTransform);
+            kImagePlaneVertexData[textureCoordIndex] = transformedCoord.x;
+            kImagePlaneVertexData[textureCoordIndex + 1] = transformedCoord.y;
+            vMesh.updateVertexData(kImagePlaneVertexData, 16);
+        }
     }
 }
