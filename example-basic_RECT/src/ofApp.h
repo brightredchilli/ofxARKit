@@ -52,8 +52,6 @@ public:
     
     vector < ofPoint > pts;
     
-    vector < vector < ofPoint > > myPts;
-    
 //    ofFbo camera;
 //    ofFbo cameraSmall;
 //    ofPixels pix;

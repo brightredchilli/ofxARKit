@@ -143,7 +143,22 @@ void ofApp::draw() {
     
     ofDisableDepthTest();
     
+    //camera.begin();
     processor->draw();
+    //camera.end();
+    
+    
+//    camera.draw(0,0);
+//    cameraSmall.begin();
+//    camera.draw(0,0, cameraSmall.getWidth(), cameraSmall.getHeight());
+//    cameraSmall.end();
+
+    //cameraSmall.draw(0,0);
+    
+    //cameraSmall.readToPixels(pix);
+    //cameraImg.setFromPixels(pix);
+    
+    //cameraImg.draw(0,0);
     
     ofEnableDepthTest();
     
@@ -154,35 +169,32 @@ void ofApp::draw() {
             camera.begin();
             processor->setARCameraMatrices();
             
-//            ofDisableDepthTest();
-//            ARPointCloud * pointCloud = session.currentFrame.rawFeaturePoints;
-//            int pointCount = pointCloud.count;
-//            cout << pointCount << endl;
-//
-//            ofSetColor(255);
-//            for (int i = 0; i < pointCount; i++){
-//                vector_float3 temp = pointCloud.points[i];
-//                ofPoint me = ofPoint(temp.x, temp.y, temp.z);
-//                cout << me << endl;
-//
-//                ofPushMatrix();
-//                ofTranslate(me);
-//                ofNoFill();
-//                ofDrawRectangle(0,0,0.1, 0.1);
-//
-//                //ofDrawSphere(me.x, me.y, me.z, 100 * 100 * sin(ofGetElapsedTimef()));
-//                ofPopMatrix();
-//            }
+            ofDisableDepthTest();
+            ARPointCloud * pointCloud = session.currentFrame.rawFeaturePoints;
+            int pointCount = pointCloud.count;
+            cout << pointCount << endl;
+            
+            ofSetColor(255);
+            for (int i = 0; i < pointCount; i++){
+                vector_float3 temp = pointCloud.points[i];
+                ofPoint me = ofPoint(temp.x, temp.y, temp.z);
+                cout << me << endl;
+                
+                ofPushMatrix();
+                ofTranslate(me);
+                ofNoFill();
+                ofDrawRectangle(0,0,0.1, 0.1);
+
+                //ofDrawSphere(me.x, me.y, me.z, 100 * 100 * sin(ofGetElapsedTimef()));
+                ofPopMatrix();
+            }
             
             ofEnableDepthTest();
             
             
             
-            
             for (int i = 0; i < mats.size(); i++){
                 ofPushMatrix();
-                
-                
                 //mats[i].operator=(const simd_float4x4 &)
                 ofMatrix4x4 mat;
                 mat.set(mats[i].columns[0].x, mats[i].columns[0].y,mats[i].columns[0].z,mats[i].columns[0].w,
@@ -192,99 +204,23 @@ void ofApp::draw() {
                 ofMultMatrix(mat);
 
                 ofSetColor(255);
-                //ofRotate(90,0,0,1);
+                ofRotate(90,0,0,1);
                 
                 //float aspect = ARCommon::getNativeAspectRatio();
                 //img.draw(-aspect/8,-0.125,aspect/4,0.25);
                 ofNoFill();
-                
-//                GLfloat m[16];
-//                glGetFloatv(GL_MODELVIEW_MATRIX, m);
-//                ofMatrix4x4 view(m);
-//                cout << view << endl;
-                //cout << mat2 << endl;
-                
-                if (i == mats.size() -1 ){
-                    ofMatrix4x4 mat2;
-                    mat2 = ofGetCurrentRenderer()->getCurrentMatrix(OF_MATRIX_MODELVIEW);
-                    
-                    ofMatrix4x4 matProj;
-                    matProj = ofGetCurrentRenderer()->getCurrentMatrix(OF_MATRIX_PROJECTION);
-                    
-                    cout << "------" << endl;
-                    //cout << mat2 << endl;
-                    cout << "A: " << ofPoint(0,0,0) * mat2 << endl;
-                    
-                }
-                
                 ofDrawRectangle(0,0,0.1, 0.1);
 
                 ofPopMatrix();
-                
-                ofSetColor(255,0,255);
-                ofRectangle r(0,0,0.1, 0.1);
-                ofPoint aa = r.getTopLeft() * mat;
-                ofPoint bb = r.getBottomLeft() * mat;
-                ofPoint cc = r.getBottomRight() * mat;
-                ofPoint dd = r.getTopRight() * mat;
-                ofLine(aa,bb);
-                ofLine(bb,cc);
-                ofLine(cc,dd);
-                ofLine(dd,aa);
-                ofPoint mm(0.,0.,0.);
-                mm = mm * mat;
-                
+            }
+            
+            ofSetColor(255,0,0);
+            for (int i = 0; i < pts.size(); i++){
                 ofPushMatrix();
-                ofTranslate(mm);
-                ofCircle(0,0,.004);
+                ofTranslate(pts[i]);
+                ofRect(0,0,0.05, 0.05);
                 ofPopMatrix();
-                ofSetColor(255,0,255);
-                ofCircle(mm.x, mm.y, mm.z, .004);
-                
-                if (i == mats.size() -1 ){
-                    ofMatrix4x4 mat2;
-                    mat2 = ofGetCurrentRenderer()->getCurrentMatrix(OF_MATRIX_MODELVIEW);
-                    cout << "B: " << mm * mat2 << endl;
-                    
-                }
-                
-                
-//                if (i == mats.size() -1 ){
-//                    ofMatrix4x4 mat23;
-//                    mat23 = ofGetCurrentRenderer()->getCurrentMatrix(OF_MATRIX_MODELVIEW);
-//
-//                    ofMatrix4x4 matProj;
-//                    matProj = ofGetCurrentRenderer()->getCurrentMatrix(OF_MATRIX_PROJECTION);
-//
-//                    cout << "--" << endl;
-//                    cout << mat23 << endl;
-//                    cout << "--" << endl;
-//                    cout << mat * mat23 << endl;
-//                    cout << "B: " << aa*mat23 << endl;
-//                    cout << "C: " << ofPoint(0,0,0)*(mat*mat23) << endl;
-//                }
-                
-                
-                
             }
-            
-            ofSetColor(255,0,0);
-//            for (int i = 0; i < pts.size(); i++){
-//                ofPushMatrix();
-//                ofTranslate(pts[i]);
-//                ofRect(0,0,0.05, 0.05);
-//                ofPopMatrix();
-//            }
-            
-            ofSetColor(255,0,0);
-            for (int i = 0; i < myPts.size(); i++){
-                //ofPushMatrix();
-                ofLine(myPts[i][0],myPts[i][2]);
-                ofLine(myPts[i][1],myPts[i][3]);
-                //ofRect(0,0,0.05, 0.05);
-                //ofPopMatrix();
-            }
-            ofSetColor(255);
             ofSetColor(255);
             
             camera.end();
@@ -310,6 +246,51 @@ void ofApp::draw() {
     font.drawString("screen height  = " + ofToString( ofGetHeight() ),      x, y+=p);
     
 
+//    ofRect(0,0,100,100);
+//    
+//    // detect rectangles
+//    ofSetColor(0, 128, 255, 128);
+//    
+//    
+//    
+//    CIImage* frame = CIImageFrom(cameraImg);
+//    frame = filteredImageUsingEnhanceFilterOnImage(frame);
+//    //CIImage *frame = [CIImage imageWithCVPixelBuffer:session.currentFrame.capturedImage];
+//    //        cout << "Frame: " << frame.debugDescription.cString << endl;
+//    
+//    //cout << frame.extent.size.width << " " << frame.extent.size.height << endl;
+//    
+//    float wScale = ofGetWidth()/(float)frame.extent.size.width;
+//    float hScale = ofGetHeight()/(float)frame.extent.size.height;
+//    
+//    ofPushMatrix();
+//    ofScale(wScale, hScale);
+//    
+//    if(frame != nil){
+//        
+//        //NSDictionary *options = @{CIDetectorAccuracy: CIDetectorAccuracyHigh, CIDetectorAspectRatio: @(1.0)};
+//        NSDictionary *options = @{CIDetectorAccuracy: CIDetectorAccuracyHigh, CIDetectorTracking: @true};
+//        
+//        CIDetector *detector = [CIDetector detectorOfType:CIDetectorTypeRectangle context:nil options:options];
+//        NSArray *features = [detector featuresInImage:frame];
+//        for(CIRectangleFeature *feature in features){
+//            //                cout << "(" << feature.topLeft.x << "," << feature.topLeft.y << ")" << "W:" << (feature.bottomRight.x-feature.topLeft.x) << "  H:" << (feature.bottomRight.y-feature.topLeft.y) << endl;
+//            ofMesh m;
+//            m.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+//            // looks like the x and the y are switched? what why?
+//            //                m.addVertex(ofVec2f(feature.topLeft.x, feature.topLeft.y));
+//            //                m.addVertex(ofVec2f(feature.topRight.x, feature.topRight.y));
+//            //                m.addVertex(ofVec2f(feature.bottomLeft.x, feature.bottomLeft.y));
+//            //                m.addVertex(ofVec2f(feature.bottomRight.x, feature.bottomRight.y));
+//            m.addVertex(ofVec2f(feature.topLeft.x, feature.topLeft.y));
+//            m.addVertex(ofVec2f(feature.topRight.x, feature.topRight.y));
+//            m.addVertex(ofVec2f(feature.bottomLeft.x, feature.bottomLeft.y));
+//            m.addVertex(ofVec2f(feature.bottomRight.x, feature.bottomRight.y));
+//            m.draw();
+//        }
+//    }
+//    ofPopMatrix();
+//    ofSetColor(255);
     
 }
 
@@ -320,19 +301,6 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::touchDown(ofTouchEventArgs &touch){
-    
-    
-    
-    
-    
-
-
-    
-}
-
-//--------------------------------------------------------------
-void ofApp::touchMoved(ofTouchEventArgs &touch){
-    
     
     processor->anchorController->addAnchor();
     
@@ -351,18 +319,20 @@ void ofApp::touchMoved(ofTouchEventArgs &touch){
         matrix_float4x4 newMat = matrix_multiply(transform, coordinateSpaceTransform);
         ofMatrix4x4 mat = ARCommon::toMat4(newMat);
         pts.push_back( ofPoint(0,0,0) * mat);
-        
-        
-        vector < ofPoint > ptsTemp;
-        ptsTemp.push_back( ofPoint(0,0,0) * mat);
-        ptsTemp.push_back( ofPoint(0.1,0,0) * mat);
-        ptsTemp.push_back( ofPoint(0.1,0.1,0) * mat);
-        ptsTemp.push_back( ofPoint(0,0.1,0) * mat);
-        myPts.push_back(ptsTemp);
-        
-        
     }
+
     
+    
+    
+    
+    
+
+
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::touchMoved(ofTouchEventArgs &touch){
     
 }
 
