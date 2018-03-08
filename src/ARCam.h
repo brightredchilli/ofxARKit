@@ -135,7 +135,7 @@ namespace ARCore {
         float zoomLevel;
         
         //! Sets up all the necessary properties and values to get the camera running.
-        void setup(bool debugMode=false);
+        void setup(bool debugMode=false, bool adjustsForOrientation = true);
         
         //! Updates camera values
         void update();

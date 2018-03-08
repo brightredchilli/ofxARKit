@@ -50,6 +50,8 @@ public:
     //! Sets up all the necessary components for ARKit
     void setup(bool debugMode=false);
     
+    void setup(bool debugMode, ARCore::ARCamRef aCamera);
+    
     //! Updates all the ARKit components
     void update();
     

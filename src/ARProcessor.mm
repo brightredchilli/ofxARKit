@@ -41,11 +41,16 @@ void ARProcessor::restartSession(){
     [session runWithConfiguration:session.configuration];
 }
 
-void ARProcessor::setup(bool debugMode){
+void ARProcessor::setup(bool debugMode) {
+    ARCamRef cam = ARCam::create(session);
+    cam->setup(this->debugMode);
+    setup(debugMode, cam);
+}
+
+void ARProcessor::setup(bool debugMode, ARCamRef aCamera){
     this->debugMode = debugMode;
     anchorController = ARAnchorManager::create(session);
-    camera = ARCam::create(session);
-    camera->setup(this->debugMode);
+    camera = aCamera;
 }
 
 void ARProcessor::draw(){
