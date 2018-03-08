@@ -59,7 +59,7 @@ namespace ARCommon {
     
     //! Returns the device dimensions. Pass in true if you want to return the dimensions in pixels. Note that
     //! when in pixels, the value is not orientation aware as opposed to getting things in points.
-    static ofVec2f getDeviceDimensions(bool useNative=false){
+    static ofVec2f getDeviceDimensions(bool useNative=false, bool adjustsForOrientation=true){
         CGRect screenBounds;
         ofVec2f dimensions;
         
@@ -87,12 +87,15 @@ namespace ARCommon {
             }
             
         };
-      
+
+        UIDeviceOrientation orientation = adjustsForOrientation ?
+        UIDevice.currentDevice.orientation : UIDeviceOrientationPortrait;
+
         // Set the dimensions as appropriate depending on our orientation.
         // Note that for some reason, and I'm not sure if it's an oF, IOS or mistake on my part, but the first time
         // it enters this switch block, dimensions are off, so there is an nested if statement to try and fix that in
         // some of the cases.
-        switch(UIDevice.currentDevice.orientation){
+        switch(orientation){
             case UIDeviceOrientationFaceUp:
                 setWidthAndHeight();
                 

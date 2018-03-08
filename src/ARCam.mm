@@ -18,8 +18,8 @@ namespace ARCore {
         debugMode = !debugMode;
     }
     
-    void ARCam::setup(bool debugMode){
-        nativeDimensions = ARCommon::getDeviceDimensions(true);
+    void ARCam::setup(bool debugMode, bool adjustsForOrientation){
+        nativeDimensions = ARCommon::getDeviceDimensions(true, adjustsForOrientation);
         ambientIntensity = 0.0;
         orientation = UIInterfaceOrientationPortrait;
         shouldBuildCameraFrame = true;
@@ -59,7 +59,7 @@ namespace ARCore {
         
         // this appears to fix inconsistancies in the image that occur in the difference in
         // startup orientation.
-        if(UIDevice.currentDevice.orientation == UIDeviceOrientationPortrait){
+        if(UIDevice.currentDevice.orientation == UIDeviceOrientationPortrait || !adjustsForOrientation){
             screen = ofRectangle(0,0,ofGetWindowWidth(),ofGetWindowHeight());
         }else{
             screen = ofRectangle(0,0,ofGetWindowHeight(),ofGetWindowWidth());
